@@ -1,5 +1,5 @@
 # Pwn-notes
-Notes about pwn exercise 
+Note su pwn exercise 
 # PwnCollege Security Challenges
 
 Benvenuto nella repository dedicata agli esercizi di sicurezza informatica tratti dal sito [PwnCollege](https://pwncollege.laser.di.unimi.it/dojos). Questo progetto raccoglie soluzioni, script e documentazione relativi alle diverse sfide proposte sulla piattaforma, con l'obiettivo di migliorare le competenze nel campo della cybersecurity, in particolare nell'ambito della sicurezza applicativa e dello sfruttamento delle vulnerabilità.
